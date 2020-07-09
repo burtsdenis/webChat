@@ -31,6 +31,6 @@ public class Message {
 
     @Override
     public String toString() {
-        return format.format(this.date) + " " + this.getAuthor() + ": " + this.getMessage() + "\n";
+        return format.format(this.date) + " " + this.getAuthor() + ": " + this.getMessage();
     }
 }
