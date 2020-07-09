@@ -134,8 +134,8 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
 
     private static void logMessage(Message message) {
         String logDir = System.getProperty("user.dir");
-        try(FileWriter fw = new FileWriter(logDir + "/chatLog.txt", true);
-            BufferedWriter bw = new BufferedWriter(fw)) {
+        try (FileWriter fw = new FileWriter(logDir + "/chatLog.txt", true);
+             BufferedWriter bw = new BufferedWriter(fw)) {
 
             bw.write(format.format(message.getDate()) + " " + message.getAuthor() + ": " + message.getMessage());
             bw.newLine();
@@ -143,6 +143,4 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
             System.out.println("Cannot log message, logFile does not exist or cannot access to logsFolder");
         }
     }
-
-
 }
