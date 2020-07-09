@@ -12,7 +12,7 @@ import java.text.SimpleDateFormat;
 
 public class ClientGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler {
 
-    private static final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
 
 
     private static final int WIDTH = 400;
@@ -128,7 +128,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     }
 
     private void drawMessage(Message message) {
-        chatArea.append(format.format(message.getDate()) + " " + message.getAuthor() + ": " + message.getMessage() + "\n");
+        chatArea.append(message.toString());
         logMessage(message);
     }
 
@@ -137,7 +137,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         try (FileWriter fw = new FileWriter(logDir + "/chatLog.txt", true);
              BufferedWriter bw = new BufferedWriter(fw)) {
 
-            bw.write(format.format(message.getDate()) + " " + message.getAuthor() + ": " + message.getMessage());
+            bw.write(message.toString());
             bw.newLine();
         } catch (IOException e) {
             System.out.println("Cannot log message, logFile does not exist or cannot access to logsFolder");
