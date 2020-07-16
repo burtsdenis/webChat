@@ -1,6 +1,9 @@
-package ru.geekbrains.webchat.gui;
+package ru.geekbrains.chatClient.gui;
 
-import ru.geekbrains.webchat.Message;
+import ru.geekbrains.net.Message;
+import ru.geekbrains.net.MessageSocketThread;
+import ru.geekbrains.net.MessageSocketThreadListener;
+import ru.geekbrains.net.User;
 
 import javax.swing.*;
 import java.awt.*;
@@ -8,11 +11,9 @@ import java.awt.event.*;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
+import java.net.Socket;
 
-public class ClientGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler {
-
-
+public class ClientGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler, MessageSocketThreadListener {
 
 
     private static final int WIDTH = 400;
@@ -33,6 +34,11 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     private final JButton buttonSend = new JButton("Send");
 
     private final JList<String> listUsers = new JList<>();
+
+    private MessageSocketThread socketThread;
+    private Message message;
+
+    private User user;
 
 
     public static void main(String[] args) {
@@ -72,6 +78,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         panelBottom.add(buttonDisconnect, BorderLayout.WEST);
         panelBottom.add(messageField, BorderLayout.CENTER);
         panelBottom.add(buttonSend, BorderLayout.EAST);
+        panelBottom.setVisible(false);
 
         add(scrollPaneChatArea, BorderLayout.CENTER);
         add(scrollPaneUsers, BorderLayout.EAST);
@@ -80,15 +87,10 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
 
         cbAlwaysOnTop.addActionListener(this);
 
-        buttonSend.addActionListener(e -> sendMessage());
-        messageField.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyReleased(KeyEvent e) {
-                if (messageField.hasFocus() && e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    sendMessage();
-                }
-            }
-        });
+        buttonSend.addActionListener(this);
+        messageField.addActionListener(this);
+        buttonLogin.addActionListener(this);
+        buttonDisconnect.addActionListener(this);
 
         setVisible(true);
 
@@ -98,8 +100,27 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     @Override
     public void actionPerformed(ActionEvent e) {
         Object src = e.getSource();
+
+
         if (src == cbAlwaysOnTop) {
             setAlwaysOnTop(cbAlwaysOnTop.isSelected());
+        } else if (src == buttonSend || src == messageField) {
+            sendMessage();
+        } else if (src == buttonLogin) {
+            try {
+                Socket socket = new Socket(ipAddressField.getText(), Integer.parseInt(portField.getText()));
+                socketThread = new MessageSocketThread(this, "Client " + loginField.getText(), socket);
+                user = new User(loginField.getText());
+                panelTop.setVisible(false);
+                panelBottom.setVisible(true);
+            } catch (IOException ioException) {
+                showError(ioException.getMessage());
+            }
+
+        } else if (src == buttonDisconnect) {
+            panelTop.setVisible(true);
+            panelBottom.setVisible(false);
+            socketThread.interrupt();
         } else {
             throw new RuntimeException("Unsupported action: " + src);
         }
@@ -115,32 +136,49 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     }
 
     private void sendMessage() {
-        Message message = new Message(
+        message = new Message(
                 messageField.getText().trim(),
-                "SomeUserName",
+                user.getNickName(),
                 System.currentTimeMillis()
         );
         if (message.getMessage().length() > 0) {
-            System.out.println("Message was sent to server");
-            drawMessage(message);
+            System.out.println("Message was sent to server: " + message.toString());
+            drawMessage(message.toString());
+            socketThread.sendMessage(message.toString());
         }
         messageField.setText("");
+        messageField.grabFocus();
     }
 
-    private void drawMessage(Message message) {
-        chatArea.append(message.toString());
+    private void drawMessage(String message) {
+        chatArea.append(message);
         logMessage(message);
     }
 
-    private static void logMessage(Message message) {
+    private static void logMessage(String message) {
         String logDir = System.getProperty("user.dir");
         try (FileWriter fw = new FileWriter(logDir + "/chatLog.txt", true);
              BufferedWriter bw = new BufferedWriter(fw)) {
 
-            bw.write(message.toString());
+            bw.write(message);
             bw.newLine();
         } catch (IOException e) {
             System.out.println("Cannot log message, logFile does not exist or cannot access to logsFolder");
         }
+    }
+
+    private void showError(String errorMsg) {
+        JOptionPane.showMessageDialog(this, errorMsg, "Error!", JOptionPane.ERROR_MESSAGE);
+    }
+
+    @Override
+    public void onMessageReceived(String message) {
+        drawMessage(message);
+    }
+
+    @Override
+    public void onException(Throwable throwable) {
+        throwable.printStackTrace();
+        showError(throwable.getMessage());
     }
 }
