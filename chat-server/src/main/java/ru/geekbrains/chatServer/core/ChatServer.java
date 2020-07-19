@@ -37,6 +37,16 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
     }
 
     @Override
+    public void onSocketClosed() {
+
+    }
+
+    @Override
+    public void onSocketReady() {
+
+    }
+
+    @Override
     public void onClientTimeout(Throwable throwable) {
 
     }

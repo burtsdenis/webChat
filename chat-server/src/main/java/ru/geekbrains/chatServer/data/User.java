@@ -1,4 +1,4 @@
-package ru.geekbrains.net;
+package ru.geekbrains.chatServer.data;
 
 import java.io.Serializable;
 

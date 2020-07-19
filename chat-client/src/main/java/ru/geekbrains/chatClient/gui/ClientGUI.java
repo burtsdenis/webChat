@@ -1,9 +1,9 @@
 package ru.geekbrains.chatClient.gui;
 
-import ru.geekbrains.net.Message;
+import ru.geekbrains.chatServer.data.Message;
+import ru.geekbrains.chatServer.data.User;
 import ru.geekbrains.net.MessageSocketThread;
 import ru.geekbrains.net.MessageSocketThreadListener;
-import ru.geekbrains.net.User;
 
 import javax.swing.*;
 import java.awt.*;
@@ -111,16 +111,13 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
                 Socket socket = new Socket(ipAddressField.getText(), Integer.parseInt(portField.getText()));
                 socketThread = new MessageSocketThread(this, "Client " + loginField.getText(), socket);
                 user = new User(loginField.getText());
-                panelTop.setVisible(false);
-                panelBottom.setVisible(true);
+                onSocketReady();
             } catch (IOException ioException) {
                 showError(ioException.getMessage());
             }
 
         } else if (src == buttonDisconnect) {
-            panelTop.setVisible(true);
-            panelBottom.setVisible(false);
-            socketThread.interrupt();
+            onSocketClosed();
         } else {
             throw new RuntimeException("Unsupported action: " + src);
         }
@@ -180,5 +177,18 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     public void onException(Throwable throwable) {
         throwable.printStackTrace();
         showError(throwable.getMessage());
+    }
+
+    @Override
+    public void onSocketClosed() {
+        panelTop.setVisible(true);
+        panelBottom.setVisible(false);
+
+    }
+
+    @Override
+    public void onSocketReady() {
+        panelTop.setVisible(false);
+        panelBottom.setVisible(true);
     }
 }
