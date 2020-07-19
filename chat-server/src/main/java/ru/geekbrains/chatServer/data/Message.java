@@ -1,9 +1,10 @@
-package ru.geekbrains.webchat;
+package ru.geekbrains.chatServer.data;
 
 
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 
-public class Message {
+public class Message implements Serializable {
 
     private static final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private final String message;
@@ -11,26 +12,18 @@ public class Message {
     private final long date;
 
     public Message(String message, String author, long date) {
-        this.message = message;
-        this.author = author;
         this.date = date;
+        this.author = author;
+        this.message = message;
     }
 
     public String getMessage() {
         return message;
     }
 
-    public String getAuthor() {
-        return author;
-    }
-
-    public long getDate() {
-
-        return date;
-    }
 
     @Override
     public String toString() {
-        return format.format(this.date) + " " + this.author + ": " + this.author;
+        return format.format(this.date) + " " + this.author + ": " + this.message + "\n";
     }
 }

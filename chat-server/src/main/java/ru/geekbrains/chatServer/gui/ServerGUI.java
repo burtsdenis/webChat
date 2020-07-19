@@ -1,6 +1,6 @@
-package ru.geekbrains.webchat.gui;
+package ru.geekbrains.chatServer.gui;
 
-import ru.geekbrains.webchat.ChatServer;
+import ru.geekbrains.chatServer.core.ChatServer;
 
 import javax.swing.*;
 import java.awt.*;
