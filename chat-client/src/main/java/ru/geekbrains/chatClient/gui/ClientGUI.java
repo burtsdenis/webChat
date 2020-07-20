@@ -1,7 +1,7 @@
 package ru.geekbrains.chatClient.gui;
 
+import ru.geekbrains.chatLibrary.MessageLibrary;
 import ru.geekbrains.chatServer.data.Message;
-import ru.geekbrains.chatServer.data.User;
 import ru.geekbrains.net.MessageSocketThread;
 import ru.geekbrains.net.MessageSocketThreadListener;
 
@@ -37,9 +37,6 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
 
     private MessageSocketThread socketThread;
     private Message message;
-
-    private User user;
-
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
@@ -108,9 +105,9 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
             sendMessage();
         } else if (src == buttonLogin) {
             try {
+                chatArea.setText("");
                 Socket socket = new Socket(ipAddressField.getText(), Integer.parseInt(portField.getText()));
                 socketThread = new MessageSocketThread(this, "Client " + loginField.getText(), socket);
-                user = new User(loginField.getText());
                 onSocketReady();
             } catch (IOException ioException) {
                 showError(ioException.getMessage());
@@ -135,7 +132,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     private void sendMessage() {
         message = new Message(
                 messageField.getText().trim(),
-                user.getNickName(),
+                loginField.getText(),
                 System.currentTimeMillis()
         );
         if (message.getMessage().length() > 0) {
@@ -188,6 +185,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
 
     @Override
     public void onSocketReady() {
+        socketThread.sendMessage(MessageLibrary.getAuthRequestMessage(loginField.getText(), new String(passwordField.getPassword())));
         panelTop.setVisible(false);
         panelBottom.setVisible(true);
     }

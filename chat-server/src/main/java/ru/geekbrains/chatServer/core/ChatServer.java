@@ -1,21 +1,32 @@
 package ru.geekbrains.chatServer.core;
 
 
+import ru.geekbrains.chatLibrary.MessageLibrary;
 import ru.geekbrains.net.*;
 
 import java.net.Socket;
+import java.util.Vector;
 
 public class ChatServer implements ServerSocketThreadListener, MessageSocketThreadListener {
 
     private ServerSocketThread serverSocketThread;
-    private MessageSocketThread socket;
+    private final ChatServerListener listener;
+    private ClientSessionThread clientSession;
+    private final Vector<ClientSessionThread> clients = new Vector<>();
+    private AuthController authController;
+
+    public ChatServer(ChatServerListener listener) {
+        this.listener = listener;
+    }
 
     public void start(int port) {
         if (serverSocketThread != null && serverSocketThread.isAlive()) {
             return;
         }
-        serverSocketThread = new ServerSocketThread(this,"Chat-Server-Socket-Thread", port, 5000);
+        serverSocketThread = new ServerSocketThread(this, "Chat-Server-Socket-Thread", port, 5000);
         serverSocketThread.start();
+        authController = new AuthController();
+        authController.init();
     }
 
     public void stop() {
@@ -28,7 +39,8 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
 
     @Override
     public void onSocketAccepted(Socket socket) {
-        this.socket = new MessageSocketThread(this, "ServerSocket", socket);
+        this.clientSession = new ClientSessionThread(this, "ClientSession" , socket);
+        clients.add(this.clientSession);
     }
 
     @Override
@@ -38,12 +50,12 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
 
     @Override
     public void onSocketClosed() {
-
+        logMessage("Socket closed");
     }
 
     @Override
     public void onSocketReady() {
-
+        logMessage("Socket ready");
     }
 
     @Override
@@ -58,6 +70,39 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
 
     @Override
     public void onMessageReceived(String message) {
-        socket.sendMessage(message);
+
+        if (clientSession.isAuthorized()) {
+            processAuthorizedUserMessage(message);
+        } else {
+            processUnauthorizedUserMessage(message);
+        }
+    }
+
+    private void processAuthorizedUserMessage(String message) {
+        logMessage(message);
+    }
+
+    private void processUnauthorizedUserMessage(String message) {
+        String[] arr = message.split(MessageLibrary.DELIMITER);
+        if (arr.length < 4 ||
+                !arr[0].equals(MessageLibrary.AUTH_METHOD) ||
+                !arr[1].equals(MessageLibrary.AUTH_REQUEST)
+        ) {
+            clientSession.authError("Incorrect request: " + message);
+            return;
+        }
+        String login = arr[2];
+        String password = arr[3];
+        String nickName = authController.getNickName(login, password);
+        if (nickName == null) {
+            clientSession.authDeny();
+            return;
+        }
+        clientSession.authAccept(nickName);
+    }
+
+    private void logMessage(String message) {
+        listener.onChatServerMessage(message);
     }
 }
+
